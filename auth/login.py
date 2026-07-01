@@ -6,7 +6,7 @@
 import bcrypt
 import streamlit as st
 from config import APP_NAME, APP_TAGLINE, LOGO_PATH
-from database.db import buscar_usuario
+from database.db import buscar_usuario, buscar_tenant_por_slug
 
 
 def verificar_senha(senha_digitada, senha_hash):
@@ -17,12 +17,13 @@ def verificar_senha(senha_digitada, senha_hash):
     return bcrypt.checkpw(senha_digitada.encode("utf-8"), senha_hash.encode("utf-8"))
 
 
-def autenticar(username, senha):
+def autenticar(tenant_slug, username, senha):
     """
-    Tenta autenticar o usuário. Retorna o registro do usuário se
-    as credenciais estiverem corretas, ou None caso contrário.
+    Tenta autenticar o usuário dentro de uma empresa (tenant_slug).
+    Retorna o registro do usuário se as credenciais estiverem
+    corretas, ou None caso contrário.
     """
-    usuario = buscar_usuario(username)
+    usuario = buscar_usuario(tenant_slug, username)
 
     if usuario is None:
         return None
@@ -40,21 +41,34 @@ def esta_logado():
     return st.session_state.get("logado", False)
 
 
-def fazer_login(usuario):
+def fazer_login(usuario, tenant):
     """
-    Marca o usuário como logado, guardando seus dados na sessão.
+    Marca o usuário como logado, guardando seus dados e os da
+    empresa (tenant) na sessão.
     """
     st.session_state["logado"] = True
     st.session_state["usuario_id"] = usuario["id"]
     st.session_state["username"] = usuario["username"]
     st.session_state["nome_completo"] = usuario["nome_completo"]
+    st.session_state["tenant_id"] = tenant["id"]
+    st.session_state["tenant_nome"] = tenant["nome"]
+    st.session_state["tenant_slug"] = tenant["slug"]
 
 
 def fazer_logout():
     """
     Remove os dados de login da sessão.
     """
-    for chave in ["logado", "usuario_id", "username", "nome_completo"]:
+    chaves = [
+        "logado",
+        "usuario_id",
+        "username",
+        "nome_completo",
+        "tenant_id",
+        "tenant_nome",
+        "tenant_slug",
+    ]
+    for chave in chaves:
         if chave in st.session_state:
             del st.session_state[chave]
 
@@ -71,14 +85,16 @@ def tela_login():
         st.markdown(f"<p style='text-align: center; color: gray;'>{APP_TAGLINE}</p>", unsafe_allow_html=True)
 
     with st.form("form_login"):
+        empresa_slug = st.text_input("Empresa")
         username = st.text_input("Usuário")
         senha = st.text_input("Senha", type="password")
         enviado = st.form_submit_button("Entrar")
 
     if enviado:
-        usuario = autenticar(username, senha)
+        usuario = autenticar(empresa_slug, username, senha)
         if usuario is not None:
-            fazer_login(usuario)
+            tenant = buscar_tenant_por_slug(empresa_slug)
+            fazer_login(usuario, tenant)
             st.rerun()
         else:
-            st.error("Usuário ou senha inválidos.")
+            st.error("Empresa, usuário ou senha inválidos.")

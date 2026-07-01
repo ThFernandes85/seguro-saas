@@ -19,4 +19,6 @@ FAVICON_PATH = os.path.join(BASE_DIR, "assets", "favicon.png")
 # Caminho do banco de dados (vamos usar SQLite no início, por ser simples
 # e não exigir instalação de servidor. Trocar para PostgreSQL no futuro
 # será só mudar esse caminho de conexão dentro de database/db.py).
+# Caminho absoluto (baseado neste arquivo) para não depender de qual
+# diretório o Streamlit/script for iniciado.
 DATABASE_PATH = os.path.join(BASE_DIR, "database", "seguro_saas.db")

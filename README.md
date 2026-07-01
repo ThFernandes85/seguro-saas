@@ -32,6 +32,23 @@ Os arquivos ficam em `assets/logo.png` (logo) e `assets/favicon.png`
 
 4. O navegador vai abrir automaticamente em http://localhost:8501
 
+## Multi-tenant (empresas)
+
+O sistema atende várias empresas (corretoras) com o mesmo app, cada uma
+com seus próprios usuários. No login, além de usuário e senha, é
+preciso informar o "slug" da empresa (ex: `demo`).
+
+Para cadastrar uma nova empresa e seu usuário administrador:
+
+```
+venv\Scripts\python.exe scripts\criar_tenant.py
+```
+
+A empresa de demonstração criada automaticamente na primeira execução é:
+- Empresa: `demo`
+- Usuário: `admin`
+- Senha: `admin123`
+
 ## Como rodar os testes
 
 ```
@@ -42,7 +59,7 @@ python -m pytest tests/ -v
 
 - [x] Etapa 1 — Estrutura do projeto
 - [ ] Etapa 2 — Tela de login funcional
-- [ ] Etapa 3 — Multi-tenant
+- [x] Etapa 3 — Multi-tenant
 - [ ] Etapa 4 — Cadastro de clientes
 - [ ] Etapa 5 — Sistema de pagamentos
 - [ ] Etapa 6 — Relatórios
