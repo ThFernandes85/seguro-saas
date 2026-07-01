@@ -76,6 +76,14 @@ notificações automáticas (webhook) do Mercado Pago quando o cliente
 paga — o status de cada apólice é atualizado manualmente, clicando em
 "Atualizar status no Mercado Pago".
 
+## Relatórios
+
+A página "Relatorios" mostra um panorama do negócio da empresa
+logada: total de clientes, total de apólices, receita mensal
+recorrente (soma do valor das apólices com assinatura ativa), um
+gráfico de apólices por status e a lista de clientes que ainda não
+têm uma apólice ativa (oportunidade de venda).
+
 ## Como rodar os testes
 
 ```
@@ -89,6 +97,6 @@ python -m pytest tests/ -v
 - [x] Etapa 3 — Multi-tenant
 - [x] Etapa 4 — Cadastro de clientes
 - [x] Etapa 5 — Sistema de pagamentos
-- [ ] Etapa 6 — Relatórios
+- [x] Etapa 6 — Relatórios
 - [ ] Etapa 7 — Deploy online
 - [ ] Etapa 8 — Modelo de negócio

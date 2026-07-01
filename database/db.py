@@ -338,3 +338,35 @@ def atualizar_status_apolice(apolice_id, tenant_id, status):
     )
     conn.commit()
     conn.close()
+
+
+def obter_resumo_apolices(tenant_id):
+    """
+    Retorna métricas agregadas das apólices de uma empresa: quantidade
+    por status (`por_status`) e a receita mensal recorrente
+    (`receita_mensal_recorrente`), que é a soma do valor_mensal
+    apenas das apólices com status "authorized" (assinatura ativa).
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        SELECT status, COUNT(*) AS total, SUM(valor_mensal) AS soma
+        FROM apolices
+        WHERE tenant_id = ?
+        GROUP BY status
+        """,
+        (tenant_id,),
+    )
+    linhas = cursor.fetchall()
+    conn.close()
+
+    por_status = {linha["status"]: linha["total"] for linha in linhas}
+    receita_mensal_recorrente = sum(
+        linha["soma"] for linha in linhas if linha["status"] == "authorized"
+    )
+
+    return {
+        "por_status": por_status,
+        "receita_mensal_recorrente": receita_mensal_recorrente,
+    }
