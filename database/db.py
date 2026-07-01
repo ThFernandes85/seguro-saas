@@ -57,6 +57,22 @@ def init_db():
         )
     """)
 
+    # Tabela de clientes. Cada cliente pertence a uma única empresa
+    # (tenant_id), e o CPF só precisa ser único dentro da empresa.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS clientes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            tenant_id INTEGER NOT NULL REFERENCES tenants(id),
+            nome TEXT NOT NULL,
+            cpf TEXT NOT NULL,
+            data_nascimento TEXT NOT NULL,
+            telefone TEXT,
+            email TEXT,
+            criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(tenant_id, cpf)
+        )
+    """)
+
     conn.commit()
     conn.close()
 
@@ -160,3 +176,91 @@ def buscar_usuario(tenant_slug, username):
     usuario = cursor.fetchone()
     conn.close()
     return usuario
+
+
+def criar_cliente(tenant_id, nome, cpf, data_nascimento, telefone, email):
+    """
+    Cadastra um cliente vinculado a uma empresa (tenant_id). Retorna o
+    id do cliente criado, ou None se o CPF já estiver cadastrado
+    nessa empresa.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT id FROM clientes WHERE tenant_id = ? AND cpf = ?", (tenant_id, cpf)
+    )
+    if cursor.fetchone() is not None:
+        conn.close()
+        return None
+
+    cursor.execute(
+        """
+        INSERT INTO clientes (tenant_id, nome, cpf, data_nascimento, telefone, email)
+        VALUES (?, ?, ?, ?, ?, ?)
+        """,
+        (tenant_id, nome, cpf, data_nascimento, telefone, email),
+    )
+    conn.commit()
+    cliente_id = cursor.lastrowid
+    conn.close()
+    return cliente_id
+
+
+def listar_clientes(tenant_id):
+    """
+    Lista todos os clientes de uma empresa, do mais recente para o
+    mais antigo.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT * FROM clientes WHERE tenant_id = ? ORDER BY id DESC", (tenant_id,)
+    )
+    clientes = cursor.fetchall()
+    conn.close()
+    return clientes
+
+
+def atualizar_cliente(cliente_id, tenant_id, nome, cpf, data_nascimento, telefone, email):
+    """
+    Atualiza os dados de um cliente, restrito à empresa (tenant_id)
+    para impedir que uma empresa altere clientes de outra. Retorna
+    False se o CPF já pertencer a outro cliente dessa empresa.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT id FROM clientes WHERE tenant_id = ? AND cpf = ? AND id != ?",
+        (tenant_id, cpf, cliente_id),
+    )
+    if cursor.fetchone() is not None:
+        conn.close()
+        return False
+
+    cursor.execute(
+        """
+        UPDATE clientes
+        SET nome = ?, cpf = ?, data_nascimento = ?, telefone = ?, email = ?
+        WHERE id = ? AND tenant_id = ?
+        """,
+        (nome, cpf, data_nascimento, telefone, email, cliente_id, tenant_id),
+    )
+    conn.commit()
+    conn.close()
+    return True
+
+
+def excluir_cliente(cliente_id, tenant_id):
+    """
+    Remove um cliente, restrito à empresa (tenant_id) para impedir
+    que uma empresa exclua clientes de outra.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "DELETE FROM clientes WHERE id = ? AND tenant_id = ?", (cliente_id, tenant_id)
+    )
+    conn.commit()
+    conn.close()
