@@ -8,6 +8,7 @@ import sqlite3
 import os
 import bcrypt
 from config import DATABASE_PATH
+from planos import PLANO_PADRAO, pode_adicionar_cliente, pode_adicionar_usuario
 
 
 def get_connection():
@@ -33,14 +34,32 @@ def init_db():
 
     # Tabela de empresas (tenants). Cada corretora que usa o sistema
     # é uma linha aqui, identificada por um "slug" (ex: "acme-seguros").
+    # plano/limite: ver planos.py. mp_preapproval_id e assinatura_status
+    # são da assinatura do PRÓPRIO SaaS que a corretora paga (não tem
+    # relação com as apólices dos clientes dela).
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS tenants (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             nome TEXT NOT NULL,
             slug TEXT UNIQUE NOT NULL,
-            criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            plano TEXT NOT NULL DEFAULT 'starter',
+            email_contato TEXT,
+            mp_preapproval_id TEXT,
+            assinatura_status TEXT NOT NULL DEFAULT 'sem_assinatura'
         )
     """)
+
+    # Migração para bancos criados antes dessas colunas existirem.
+    colunas_tenants = {linha["name"] for linha in cursor.execute("PRAGMA table_info(tenants)")}
+    if "plano" not in colunas_tenants:
+        cursor.execute("ALTER TABLE tenants ADD COLUMN plano TEXT NOT NULL DEFAULT 'starter'")
+    if "email_contato" not in colunas_tenants:
+        cursor.execute("ALTER TABLE tenants ADD COLUMN email_contato TEXT")
+    if "mp_preapproval_id" not in colunas_tenants:
+        cursor.execute("ALTER TABLE tenants ADD COLUMN mp_preapproval_id TEXT")
+    if "assinatura_status" not in colunas_tenants:
+        cursor.execute("ALTER TABLE tenants ADD COLUMN assinatura_status TEXT NOT NULL DEFAULT 'sem_assinatura'")
 
     # Tabela de usuários. Cada usuário pertence a uma única empresa
     # (tenant_id), e o username só precisa ser único dentro da empresa
@@ -106,7 +125,7 @@ def init_db():
     conn.close()
 
 
-def criar_tenant(nome, slug):
+def criar_tenant(nome, slug, email_contato=None, plano=PLANO_PADRAO):
     """
     Cria uma nova empresa (tenant). Retorna o id do tenant criado,
     ou None se o slug já estiver em uso.
@@ -119,7 +138,10 @@ def criar_tenant(nome, slug):
         conn.close()
         return None
 
-    cursor.execute("INSERT INTO tenants (nome, slug) VALUES (?, ?)", (nome, slug))
+    cursor.execute(
+        "INSERT INTO tenants (nome, slug, email_contato, plano) VALUES (?, ?, ?, ?)",
+        (nome, slug, email_contato, plano),
+    )
     conn.commit()
     tenant_id = cursor.lastrowid
     conn.close()
@@ -138,11 +160,94 @@ def buscar_tenant_por_slug(slug):
     return tenant
 
 
+def buscar_tenant_por_id(tenant_id):
+    """
+    Busca uma empresa pelo id. Retorna None se não encontrar.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM tenants WHERE id = ?", (tenant_id,))
+    tenant = cursor.fetchone()
+    conn.close()
+    return tenant
+
+
+def atualizar_plano_tenant(tenant_id, plano):
+    """
+    Atualiza o plano de assinatura de uma empresa.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE tenants SET plano = ? WHERE id = ?", (plano, tenant_id))
+    conn.commit()
+    conn.close()
+
+
+def atualizar_email_contato_tenant(tenant_id, email_contato):
+    """
+    Atualiza o e-mail de contato/cobrança de uma empresa.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE tenants SET email_contato = ? WHERE id = ?", (email_contato, tenant_id)
+    )
+    conn.commit()
+    conn.close()
+
+
+def atualizar_assinatura_tenant(tenant_id, mp_preapproval_id, status):
+    """
+    Atualiza os dados da assinatura do próprio SaaS de uma empresa
+    (a mensalidade que a corretora paga para usar o sistema).
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE tenants SET mp_preapproval_id = ?, assinatura_status = ? WHERE id = ?",
+        (mp_preapproval_id, status, tenant_id),
+    )
+    conn.commit()
+    conn.close()
+
+
+def contar_clientes(tenant_id):
+    """
+    Conta quantos clientes uma empresa já tem cadastrados.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) AS total FROM clientes WHERE tenant_id = ?", (tenant_id,))
+    total = cursor.fetchone()["total"]
+    conn.close()
+    return total
+
+
+def contar_usuarios(tenant_id):
+    """
+    Conta quantos usuários uma empresa já tem cadastrados.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) AS total FROM usuarios WHERE tenant_id = ?", (tenant_id,))
+    total = cursor.fetchone()["total"]
+    conn.close()
+    return total
+
+
 def criar_usuario(tenant_id, username, senha, nome_completo):
     """
-    Cria um usuário vinculado a uma empresa (tenant_id). Retorna o id
-    do usuário criado, ou None se o username já existir nessa empresa.
+    Cria um usuário vinculado a uma empresa (tenant_id).
+
+    Retorna uma tupla (usuario_id, erro):
+    - Em caso de sucesso: (id do usuário, None).
+    - Em caso de falha: (None, mensagem de erro) -- username duplicado
+      nessa empresa, ou limite de usuários do plano atingido.
     """
+    tenant = buscar_tenant_por_id(tenant_id)
+    if tenant is not None and not pode_adicionar_usuario(tenant["plano"], contar_usuarios(tenant_id)):
+        return None, "Limite de usuários do plano atingido. Faça upgrade para adicionar mais."
+
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -152,7 +257,7 @@ def criar_usuario(tenant_id, username, senha, nome_completo):
     )
     if cursor.fetchone() is not None:
         conn.close()
-        return None
+        return None, "Já existe um usuário com esse nome nessa empresa."
 
     senha_hash = bcrypt.hashpw(senha.encode("utf-8"), bcrypt.gensalt())
     cursor.execute(
@@ -163,7 +268,7 @@ def criar_usuario(tenant_id, username, senha, nome_completo):
     conn.commit()
     usuario_id = cursor.lastrowid
     conn.close()
-    return usuario_id
+    return usuario_id, None
 
 
 def criar_tenant_e_usuario_teste():
@@ -183,7 +288,7 @@ def criar_tenant_e_usuario_teste():
     conn.close()
 
     if total == 0:
-        tenant_id = criar_tenant("Empresa Demo", "demo")
+        tenant_id = criar_tenant("Empresa Demo", "demo", email_contato="demo@example.com")
         criar_usuario(tenant_id, "admin", "admin123", "Administrador")
 
 
@@ -284,10 +389,17 @@ def salvar_nova_senha(usuario_id, senha_hash):
 
 def criar_cliente(tenant_id, nome, cpf, data_nascimento, telefone, email):
     """
-    Cadastra um cliente vinculado a uma empresa (tenant_id). Retorna o
-    id do cliente criado, ou None se o CPF já estiver cadastrado
-    nessa empresa.
+    Cadastra um cliente vinculado a uma empresa (tenant_id).
+
+    Retorna uma tupla (cliente_id, erro):
+    - Em caso de sucesso: (id do cliente, None).
+    - Em caso de falha: (None, mensagem de erro) -- CPF duplicado
+      nessa empresa, ou limite de clientes do plano atingido.
     """
+    tenant = buscar_tenant_por_id(tenant_id)
+    if tenant is not None and not pode_adicionar_cliente(tenant["plano"], contar_clientes(tenant_id)):
+        return None, "Limite de clientes do plano atingido. Faça upgrade para cadastrar mais."
+
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -296,7 +408,7 @@ def criar_cliente(tenant_id, nome, cpf, data_nascimento, telefone, email):
     )
     if cursor.fetchone() is not None:
         conn.close()
-        return None
+        return None, "Já existe um cliente com esse CPF nesta empresa."
 
     cursor.execute(
         """
@@ -308,7 +420,7 @@ def criar_cliente(tenant_id, nome, cpf, data_nascimento, telefone, email):
     conn.commit()
     cliente_id = cursor.lastrowid
     conn.close()
-    return cliente_id
+    return cliente_id, None
 
 
 def listar_clientes(tenant_id):
