@@ -45,6 +45,8 @@ def init_db():
     # Tabela de usuários. Cada usuário pertence a uma única empresa
     # (tenant_id), e o username só precisa ser único dentro da empresa
     # -- duas empresas diferentes podem ter cada uma o seu "admin".
+    # tentativas_falhas e bloqueado_ate implementam a proteção contra
+    # força bruta no login (ver auth/login.py).
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS usuarios (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -53,9 +55,19 @@ def init_db():
             senha_hash TEXT NOT NULL,
             nome_completo TEXT NOT NULL,
             criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            tentativas_falhas INTEGER NOT NULL DEFAULT 0,
+            bloqueado_ate TEXT,
             UNIQUE(tenant_id, username)
         )
     """)
+
+    # Migração para bancos criados antes de tentativas_falhas/bloqueado_ate
+    # existirem (CREATE TABLE IF NOT EXISTS não altera tabelas já criadas).
+    colunas_usuarios = {linha["name"] for linha in cursor.execute("PRAGMA table_info(usuarios)")}
+    if "tentativas_falhas" not in colunas_usuarios:
+        cursor.execute("ALTER TABLE usuarios ADD COLUMN tentativas_falhas INTEGER NOT NULL DEFAULT 0")
+    if "bloqueado_ate" not in colunas_usuarios:
+        cursor.execute("ALTER TABLE usuarios ADD COLUMN bloqueado_ate TEXT")
 
     # Tabela de clientes. Cada cliente pertence a uma única empresa
     # (tenant_id), e o CPF só precisa ser único dentro da empresa.
@@ -193,6 +205,81 @@ def buscar_usuario(tenant_slug, username):
     usuario = cursor.fetchone()
     conn.close()
     return usuario
+
+
+def buscar_usuario_por_id(usuario_id, tenant_id):
+    """
+    Busca um usuário pelo id, restrito à empresa (tenant_id).
+    Retorna None se não encontrar.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT * FROM usuarios WHERE id = ? AND tenant_id = ?", (usuario_id, tenant_id)
+    )
+    usuario = cursor.fetchone()
+    conn.close()
+    return usuario
+
+
+def incrementar_tentativas_falhas(usuario_id):
+    """
+    Incrementa o contador de tentativas de login falhas de um
+    usuário. Retorna o novo total de tentativas.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE usuarios SET tentativas_falhas = tentativas_falhas + 1 WHERE id = ?",
+        (usuario_id,),
+    )
+    conn.commit()
+    cursor.execute("SELECT tentativas_falhas FROM usuarios WHERE id = ?", (usuario_id,))
+    total = cursor.fetchone()["tentativas_falhas"]
+    conn.close()
+    return total
+
+
+def bloquear_usuario_ate(usuario_id, bloqueado_ate_iso):
+    """
+    Marca um usuário como bloqueado até o horário informado (string
+    ISO 8601, em UTC).
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE usuarios SET bloqueado_ate = ? WHERE id = ?", (bloqueado_ate_iso, usuario_id)
+    )
+    conn.commit()
+    conn.close()
+
+
+def resetar_tentativas_falhas(usuario_id):
+    """
+    Zera o contador de tentativas falhas e remove o bloqueio de um
+    usuário. Chamado após um login bem-sucedido.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE usuarios SET tentativas_falhas = 0, bloqueado_ate = NULL WHERE id = ?",
+        (usuario_id,),
+    )
+    conn.commit()
+    conn.close()
+
+
+def salvar_nova_senha(usuario_id, senha_hash):
+    """
+    Atualiza o hash de senha de um usuário (troca de senha).
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE usuarios SET senha_hash = ? WHERE id = ?", (senha_hash, usuario_id)
+    )
+    conn.commit()
+    conn.close()
 
 
 def criar_cliente(tenant_id, nome, cpf, data_nascimento, telefone, email):

@@ -3,10 +3,26 @@
 # Lógica de autenticação: verificar se usuário/senha estão corretos
 # e controlar o estado de "logado" usando o session_state do Streamlit.
 
+import datetime
+import math
+
 import bcrypt
 import streamlit as st
 from config import APP_NAME, APP_TAGLINE, LOGO_PATH
-from database.db import buscar_usuario, buscar_tenant_por_slug
+from database.db import (
+    buscar_usuario,
+    buscar_usuario_por_id,
+    buscar_tenant_por_slug,
+    incrementar_tentativas_falhas,
+    bloquear_usuario_ate,
+    resetar_tentativas_falhas,
+    salvar_nova_senha,
+)
+
+# Proteção contra força bruta: depois de LIMITE_TENTATIVAS senhas
+# erradas seguidas, a conta fica bloqueada por DURACAO_BLOQUEIO_MINUTOS.
+LIMITE_TENTATIVAS = 5
+DURACAO_BLOQUEIO_MINUTOS = 15
 
 
 def verificar_senha(senha_digitada, senha_hash):
@@ -17,21 +33,85 @@ def verificar_senha(senha_digitada, senha_hash):
     return bcrypt.checkpw(senha_digitada.encode("utf-8"), senha_hash.encode("utf-8"))
 
 
+def calcular_bloqueio(tentativas_falhas):
+    """
+    Decide se a conta deve ser bloqueada, dado o número total de
+    tentativas de login falhas acumuladas. Retorna o horário (UTC,
+    datetime) até quando a conta deve ficar bloqueada, ou None se
+    ainda não atingiu o limite.
+    """
+    if tentativas_falhas < LIMITE_TENTATIVAS:
+        return None
+    return datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=DURACAO_BLOQUEIO_MINUTOS)
+
+
+def esta_bloqueado(bloqueado_ate, agora=None):
+    """
+    Verifica se um horário de bloqueio (string ISO 8601 em UTC, ou
+    None/vazio) ainda está em vigor.
+    """
+    if not bloqueado_ate:
+        return False
+    agora = agora or datetime.datetime.now(datetime.timezone.utc)
+    return datetime.datetime.fromisoformat(bloqueado_ate) > agora
+
+
+def _minutos_restantes(bloqueado_ate):
+    delta = datetime.datetime.fromisoformat(bloqueado_ate) - datetime.datetime.now(datetime.timezone.utc)
+    return max(1, math.ceil(delta.total_seconds() / 60))
+
+
 def autenticar(tenant_slug, username, senha):
     """
-    Tenta autenticar o usuário dentro de uma empresa (tenant_slug).
-    Retorna o registro do usuário se as credenciais estiverem
-    corretas, ou None caso contrário.
+    Tenta autenticar o usuário dentro de uma empresa (tenant_slug),
+    aplicando a proteção contra força bruta.
+
+    Retorna uma tupla (usuario, erro):
+    - Em caso de sucesso: (registro do usuário, None).
+    - Em caso de falha: (None, mensagem de erro para mostrar na tela).
     """
     usuario = buscar_usuario(tenant_slug, username)
 
     if usuario is None:
-        return None
+        return None, "Empresa, usuário ou senha inválidos."
 
-    if verificar_senha(senha, usuario["senha_hash"]):
-        return usuario
+    if esta_bloqueado(usuario["bloqueado_ate"]):
+        minutos = _minutos_restantes(usuario["bloqueado_ate"])
+        return None, f"Conta bloqueada temporariamente. Tente novamente em {minutos} min."
 
-    return None
+    if not verificar_senha(senha, usuario["senha_hash"]):
+        tentativas = incrementar_tentativas_falhas(usuario["id"])
+        bloqueio_ate = calcular_bloqueio(tentativas)
+        if bloqueio_ate is not None:
+            bloquear_usuario_ate(usuario["id"], bloqueio_ate.isoformat())
+            return None, (
+                f"Muitas tentativas erradas. Conta bloqueada por "
+                f"{DURACAO_BLOQUEIO_MINUTOS} minutos."
+            )
+        return None, "Empresa, usuário ou senha inválidos."
+
+    resetar_tentativas_falhas(usuario["id"])
+    return usuario, None
+
+
+def alterar_senha(usuario_id, tenant_id, senha_atual, nova_senha):
+    """
+    Troca a senha do usuário logado, após confirmar a senha atual.
+    Retorna uma tupla (sucesso, erro): (True, None) ou (False, mensagem).
+    """
+    usuario = buscar_usuario_por_id(usuario_id, tenant_id)
+    if usuario is None:
+        return False, "Usuário não encontrado."
+
+    if not verificar_senha(senha_atual, usuario["senha_hash"]):
+        return False, "Senha atual incorreta."
+
+    if len(nova_senha) < 8:
+        return False, "A nova senha precisa ter pelo menos 8 caracteres."
+
+    nova_senha_hash = bcrypt.hashpw(nova_senha.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+    salvar_nova_senha(usuario_id, nova_senha_hash)
+    return True, None
 
 
 def esta_logado():
@@ -91,10 +171,10 @@ def tela_login():
         enviado = st.form_submit_button("Entrar")
 
     if enviado:
-        usuario = autenticar(empresa_slug, username, senha)
+        usuario, erro = autenticar(empresa_slug, username, senha)
         if usuario is not None:
             tenant = buscar_tenant_por_slug(empresa_slug)
             fazer_login(usuario, tenant)
             st.rerun()
         else:
-            st.error("Empresa, usuário ou senha inválidos.")
+            st.error(erro)

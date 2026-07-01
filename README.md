@@ -32,6 +32,13 @@ Os arquivos ficam em `assets/logo.png` (logo) e `assets/favicon.png`
 
 4. O navegador vai abrir automaticamente em http://localhost:8501
 
+## Login e segurança
+
+Além de empresa + usuário + senha, o login tem proteção contra força
+bruta: depois de 5 tentativas erradas seguidas, a conta fica bloqueada
+por 15 minutos (mesmo com a senha certa). Usuários logados podem
+trocar a própria senha na página "Minha Conta".
+
 ## Multi-tenant (empresas)
 
 O sistema atende várias empresas (corretoras) com o mesmo app, cada uma
@@ -128,7 +135,7 @@ A versão do Python usada no deploy está fixada em `runtime.txt`
 ## Status do desenvolvimento
 
 - [x] Etapa 1 — Estrutura do projeto
-- [ ] Etapa 2 — Tela de login funcional
+- [x] Etapa 2 — Tela de login funcional
 - [x] Etapa 3 — Multi-tenant
 - [x] Etapa 4 — Cadastro de clientes
 - [x] Etapa 5 — Sistema de pagamentos
