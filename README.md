@@ -49,6 +49,33 @@ A empresa de demonstração criada automaticamente na primeira execução é:
 - Usuário: `admin`
 - Senha: `admin123`
 
+## Pagamentos (Mercado Pago)
+
+O prêmio do seguro é cobrado como uma assinatura mensal (cobrança
+recorrente) via Mercado Pago, na página "Apolices Pagamentos".
+
+Para habilitar cobranças de verdade:
+
+1. Crie uma conta de desenvolvedor em https://www.mercadopago.com.br/developers
+   e pegue o **Access Token de teste (sandbox)** no seu painel.
+2. Copie `.streamlit/secrets.toml.example` para `.streamlit/secrets.toml`
+   (esse arquivo não é versionado no Git) e cole seu token:
+   ```
+   MERCADOPAGO_ACCESS_TOKEN = "TEST-..."
+   ```
+3. Reinicie o `streamlit run app.py`.
+
+Sem o token configurado, a tela funciona normalmente mas mostra um
+aviso e não cria cobranças de verdade. A lógica de integração
+(`pagamentos/mercado_pago.py`) tem testes automatizados que simulam
+as respostas da API do Mercado Pago, então não é necessário ter o
+token configurado para rodar a suíte de testes.
+
+Como ainda não temos um domínio público, o app não recebe
+notificações automáticas (webhook) do Mercado Pago quando o cliente
+paga — o status de cada apólice é atualizado manualmente, clicando em
+"Atualizar status no Mercado Pago".
+
 ## Como rodar os testes
 
 ```
@@ -61,7 +88,7 @@ python -m pytest tests/ -v
 - [ ] Etapa 2 — Tela de login funcional
 - [x] Etapa 3 — Multi-tenant
 - [x] Etapa 4 — Cadastro de clientes
-- [ ] Etapa 5 — Sistema de pagamentos
+- [x] Etapa 5 — Sistema de pagamentos
 - [ ] Etapa 6 — Relatórios
 - [ ] Etapa 7 — Deploy online
 - [ ] Etapa 8 — Modelo de negócio
