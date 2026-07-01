@@ -5,6 +5,7 @@
 
 import bcrypt
 import streamlit as st
+from config import APP_NAME, APP_TAGLINE, LOGO_PATH
 from database.db import buscar_usuario, buscar_tenant_por_slug
 
 
@@ -77,7 +78,11 @@ def tela_login():
     Renderiza o formulário de login. Se as credenciais estiverem
     corretas, marca o usuário como logado e recarrega a página.
     """
-    st.title("🛡️ Login")
+    col_esq, col_centro, col_dir = st.columns([1, 2, 1])
+    with col_centro:
+        st.image(LOGO_PATH, width=120)
+        st.markdown(f"<h2 style='text-align: center;'>{APP_NAME}</h2>", unsafe_allow_html=True)
+        st.markdown(f"<p style='text-align: center; color: gray;'>{APP_TAGLINE}</p>", unsafe_allow_html=True)
 
     with st.form("form_login"):
         empresa_slug = st.text_input("Empresa")
