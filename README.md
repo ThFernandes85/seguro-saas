@@ -23,6 +23,12 @@ Sistema multi-tenant de gestão de seguros de vida, feito em Python + Streamlit.
 
 4. O navegador vai abrir automaticamente em http://localhost:8501
 
+## Como rodar os testes
+
+```
+python -m pytest tests/ -v
+```
+
 ## Status do desenvolvimento
 
 - [x] Etapa 1 — Estrutura do projeto
