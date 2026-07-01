@@ -90,6 +90,41 @@ têm uma apólice ativa (oportunidade de venda).
 python -m pytest tests/ -v
 ```
 
+## Deploy online (Streamlit Community Cloud)
+
+O jeito mais rápido e gratuito de colocar o app no ar é o
+[Streamlit Community Cloud](https://share.streamlit.io), que já se
+conecta direto com o GitHub. Esse login é seu (usa sua conta do
+GitHub), então os passos abaixo você faz manualmente:
+
+1. Acesse https://share.streamlit.io e entre com sua conta do GitHub
+   (a mesma que tem o repositório `seguro-saas`).
+2. Clique em "New app" (ou "Create app").
+3. Selecione:
+   - Repository: `ThFernandes85/seguro-saas`
+   - Branch: `main`
+   - Main file path: `app.py`
+4. Antes de clicar em "Deploy", abra "Advanced settings" e cole em
+   "Secrets" o conteúdo do seu `.streamlit/secrets.toml` (se já tiver
+   configurado o Mercado Pago):
+   ```
+   MERCADOPAGO_ACCESS_TOKEN = "TEST-..."
+   ```
+5. Clique em "Deploy". Em alguns minutos o app estará disponível em
+   uma URL pública (algo como `seguro-saas.streamlit.app`).
+
+**Importante — sobre o banco de dados:** o app usa SQLite, um arquivo
+local (`database/seguro_saas.db`). No Streamlit Community Cloud, o
+armazenamento é temporário: sempre que o app "dorme" por inatividade
+e é reiniciado, ou quando você faz um novo deploy, esse arquivo é
+recriado do zero (a empresa de demonstração `demo`/`admin`/`admin123`
+volta, mas clientes e apólices cadastrados no site são perdidos).
+Isso é aceitável para demonstração, mas antes de usar com clientes
+reais vale migrar para um banco externo (ex: PostgreSQL gerenciado).
+
+A versão do Python usada no deploy está fixada em `runtime.txt`
+(3.12), para ficar igual ao ambiente de desenvolvimento local.
+
 ## Status do desenvolvimento
 
 - [x] Etapa 1 — Estrutura do projeto
@@ -98,5 +133,5 @@ python -m pytest tests/ -v
 - [x] Etapa 4 — Cadastro de clientes
 - [x] Etapa 5 — Sistema de pagamentos
 - [x] Etapa 6 — Relatórios
-- [ ] Etapa 7 — Deploy online
+- [x] Etapa 7 — Deploy online
 - [ ] Etapa 8 — Modelo de negócio
