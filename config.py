@@ -22,3 +22,39 @@ FAVICON_PATH = os.path.join(BASE_DIR, "assets", "favicon.png")
 # Caminho absoluto (baseado neste arquivo) para não depender de qual
 # diretório o Streamlit/script for iniciado.
 DATABASE_PATH = os.path.join(BASE_DIR, "database", "seguro_saas.db")
+
+
+SECRETS_PATH = os.path.join(BASE_DIR, ".streamlit", "secrets.toml")
+
+
+def obter_segredo(nome, padrao=None):
+    """
+    Lê uma configuração sensível (ex: chave de API) do arquivo
+    .streamlit/secrets.toml. Retorna `padrao` se o arquivo não
+    existir ou a chave não estiver definida -- assim scripts fora do
+    Streamlit e o app sem o token configurado não quebram.
+
+    Só chama st.secrets se o arquivo existir: o Streamlit mostra um
+    banner de erro na tela (e não só uma exceção) quando st.secrets é
+    acessado sem nenhum secrets.toml presente.
+
+    É lida sob demanda (e não no import deste módulo) porque acessar
+    st.secrets antes de st.set_page_config() quebra o Streamlit.
+    """
+    if not os.path.exists(SECRETS_PATH):
+        return padrao
+
+    try:
+        import streamlit as st
+
+        return st.secrets.get(nome, padrao)
+    except Exception:
+        return padrao
+
+
+# Nome da chave do Access Token do Mercado Pago (modo sandbox/teste ou
+# produção). Configure em .streamlit/secrets.toml (arquivo não
+# versionado): MERCADOPAGO_ACCESS_TOKEN = "TEST-...". Veja instruções
+# no README, seção "Pagamentos (Mercado Pago)". Use
+# `obter_segredo(MERCADOPAGO_ACCESS_TOKEN_KEY)` para ler o valor.
+MERCADOPAGO_ACCESS_TOKEN_KEY = "MERCADOPAGO_ACCESS_TOKEN"

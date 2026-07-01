@@ -73,6 +73,23 @@ def init_db():
         )
     """)
 
+    # Tabela de apólices: o prêmio (cobrança recorrente mensal) de um
+    # cliente. mp_preapproval_id é o id da assinatura no Mercado Pago;
+    # status reflete o status retornado por lá (pending, authorized,
+    # paused, cancelled).
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS apolices (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            tenant_id INTEGER NOT NULL REFERENCES tenants(id),
+            cliente_id INTEGER NOT NULL REFERENCES clientes(id),
+            valor_mensal REAL NOT NULL,
+            status TEXT NOT NULL DEFAULT 'pending',
+            mp_preapproval_id TEXT,
+            mp_checkout_url TEXT,
+            criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
     conn.commit()
     conn.close()
 
@@ -261,6 +278,63 @@ def excluir_cliente(cliente_id, tenant_id):
     cursor = conn.cursor()
     cursor.execute(
         "DELETE FROM clientes WHERE id = ? AND tenant_id = ?", (cliente_id, tenant_id)
+    )
+    conn.commit()
+    conn.close()
+
+
+def criar_apolice(tenant_id, cliente_id, valor_mensal, mp_preapproval_id, mp_checkout_url, status="pending"):
+    """
+    Cria uma apólice (prêmio mensal) vinculada a um cliente de uma
+    empresa. Retorna o id da apólice criada.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        INSERT INTO apolices
+            (tenant_id, cliente_id, valor_mensal, status, mp_preapproval_id, mp_checkout_url)
+        VALUES (?, ?, ?, ?, ?, ?)
+        """,
+        (tenant_id, cliente_id, valor_mensal, status, mp_preapproval_id, mp_checkout_url),
+    )
+    conn.commit()
+    apolice_id = cursor.lastrowid
+    conn.close()
+    return apolice_id
+
+
+def listar_apolices(tenant_id):
+    """
+    Lista as apólices de uma empresa, junto com o nome e e-mail do
+    cliente de cada uma, da mais recente para a mais antiga.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        SELECT apolices.*, clientes.nome AS cliente_nome, clientes.email AS cliente_email
+        FROM apolices
+        JOIN clientes ON clientes.id = apolices.cliente_id
+        WHERE apolices.tenant_id = ?
+        ORDER BY apolices.id DESC
+        """,
+        (tenant_id,),
+    )
+    apolices = cursor.fetchall()
+    conn.close()
+    return apolices
+
+
+def atualizar_status_apolice(apolice_id, tenant_id, status):
+    """
+    Atualiza o status de uma apólice, restrito à empresa (tenant_id).
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE apolices SET status = ? WHERE id = ? AND tenant_id = ?",
+        (status, apolice_id, tenant_id),
     )
     conn.commit()
     conn.close()
