@@ -60,7 +60,7 @@ python -m pytest tests/ -v
 - [x] Etapa 1 — Estrutura do projeto
 - [ ] Etapa 2 — Tela de login funcional
 - [x] Etapa 3 — Multi-tenant
-- [ ] Etapa 4 — Cadastro de clientes
+- [x] Etapa 4 — Cadastro de clientes
 - [ ] Etapa 5 — Sistema de pagamentos
 - [ ] Etapa 6 — Relatórios
 - [ ] Etapa 7 — Deploy online
