@@ -16,11 +16,14 @@ import streamlit as st
 from auth.login import esta_logado
 from database.db import (
     init_db,
+    buscar_tenant_por_id,
+    contar_clientes,
     criar_cliente,
     listar_clientes,
     atualizar_cliente,
     excluir_cliente,
 )
+from planos import PLANOS
 from utils.helpers import apenas_digitos, validar_cpf, formatar_cpf
 
 init_db()
@@ -30,8 +33,13 @@ if not esta_logado():
     st.stop()
 
 tenant_id = st.session_state["tenant_id"]
+tenant = buscar_tenant_por_id(tenant_id)
+limite_clientes = PLANOS[tenant["plano"]]["limite_clientes"]
 
 st.title("Cadastro de Clientes")
+
+if limite_clientes is not None:
+    st.caption(f"Plano {PLANOS[tenant['plano']]['nome']}: {contar_clientes(tenant_id)}/{limite_clientes} clientes usados.")
 
 with st.expander("➕ Novo cliente", expanded=True):
     with st.form("form_novo_cliente", clear_on_submit=True):
@@ -57,7 +65,7 @@ with st.expander("➕ Novo cliente", expanded=True):
         elif data_nascimento is None:
             st.error("Informe a data de nascimento.")
         else:
-            cliente_id = criar_cliente(
+            cliente_id, erro = criar_cliente(
                 tenant_id,
                 nome.strip(),
                 cpf_digitos,
@@ -65,8 +73,8 @@ with st.expander("➕ Novo cliente", expanded=True):
                 telefone.strip(),
                 email.strip(),
             )
-            if cliente_id is None:
-                st.error("Já existe um cliente com esse CPF nesta empresa.")
+            if erro:
+                st.error(erro)
             else:
                 st.success(f"Cliente '{nome}' cadastrado com sucesso!")
                 st.rerun()

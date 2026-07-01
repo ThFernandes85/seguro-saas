@@ -91,6 +91,24 @@ recorrente (soma do valor das apólices com assinatura ativa), um
 gráfico de apólices por status e a lista de clientes que ainda não
 têm uma apólice ativa (oportunidade de venda).
 
+## Modelo de negócio (planos)
+
+O SaaS tem 3 planos de assinatura (definidos em `planos.py`), cobrados
+da própria corretora (não dos clientes finais dela) via Mercado Pago,
+na página "Meu Plano":
+
+| Plano    | Preço mensal | Limite de clientes | Limite de usuários |
+|----------|--------------|---------------------|----------------------|
+| Starter  | R$ 49,90     | 20                  | 1                    |
+| Pro      | R$ 149,90    | 100                 | 5                    |
+| Business | R$ 399,90    | Ilimitado           | Ilimitado            |
+
+Os limites são aplicados de verdade: ao atingir o limite de clientes
+ou usuários do plano, o cadastro é bloqueado com uma mensagem pedindo
+upgrade. Downgrade para um plano menor que o uso atual também é
+bloqueado, até a empresa reduzir o uso. Novas empresas começam no
+plano Starter (`scripts/criar_tenant.py` permite escolher outro).
+
 ## Como rodar os testes
 
 ```
@@ -141,4 +159,4 @@ A versão do Python usada no deploy está fixada em `runtime.txt`
 - [x] Etapa 5 — Sistema de pagamentos
 - [x] Etapa 6 — Relatórios
 - [x] Etapa 7 — Deploy online
-- [ ] Etapa 8 — Modelo de negócio
+- [x] Etapa 8 — Modelo de negócio
