@@ -158,23 +158,26 @@ def tela_login():
     Renderiza o formulário de login. Se as credenciais estiverem
     corretas, marca o usuário como logado e recarrega a página.
     """
-    col_esq, col_centro, col_dir = st.columns([1, 2, 1])
+    st.markdown("<div style='height: 4vh'></div>", unsafe_allow_html=True)
+
+    col_esq, col_centro, col_dir = st.columns([2, 3, 2])
     with col_centro:
         st.image(LOGO_PATH, width=120)
-        st.markdown(f"<h2 style='text-align: center;'>{APP_NAME}</h2>", unsafe_allow_html=True)
+        st.markdown(f"<h2 style='text-align: center; margin-bottom: 0;'>{APP_NAME}</h2>", unsafe_allow_html=True)
         st.markdown(f"<p style='text-align: center; color: gray;'>{APP_TAGLINE}</p>", unsafe_allow_html=True)
 
-    with st.form("form_login"):
-        empresa_slug = st.text_input("Empresa")
-        username = st.text_input("Usuário")
-        senha = st.text_input("Senha", type="password")
-        enviado = st.form_submit_button("Entrar")
+        with st.container(border=True):
+            with st.form("form_login"):
+                empresa_slug = st.text_input("Empresa")
+                username = st.text_input("Usuário")
+                senha = st.text_input("Senha", type="password")
+                enviado = st.form_submit_button("Entrar", use_container_width=True)
 
-    if enviado:
-        usuario, erro = autenticar(empresa_slug, username, senha)
-        if usuario is not None:
-            tenant = buscar_tenant_por_slug(empresa_slug)
-            fazer_login(usuario, tenant)
-            st.rerun()
-        else:
-            st.error(erro)
+            if enviado:
+                usuario, erro = autenticar(empresa_slug, username, senha)
+                if usuario is not None:
+                    tenant = buscar_tenant_por_slug(empresa_slug)
+                    fazer_login(usuario, tenant)
+                    st.rerun()
+                else:
+                    st.error(erro)

@@ -26,6 +26,8 @@ from database.db import (
 from planos import PLANOS
 from utils.helpers import apenas_digitos, validar_cpf, formatar_cpf
 
+st.set_page_config(layout="wide")
+
 init_db()
 
 if not esta_logado():

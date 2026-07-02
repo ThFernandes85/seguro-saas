@@ -11,6 +11,14 @@ em tons de azul-marinho e dourado para transmitir seriedade e confiança.
 Os arquivos ficam em `assets/logo.png` (logo) e `assets/favicon.png`
 (ícone da aba do navegador), e as cores do app estão em `.streamlit/config.toml`.
 
+## Página inicial (dashboard)
+
+Depois do login, a página inicial mostra um painel com os principais
+números do negócio (clientes, apólices ativas, total de apólices e
+receita mensal recorrente) e cartões de acesso rápido para as
+outras páginas do sistema. Todas as páginas usam layout largo (wide)
+para uma aparência mais consistente de painel corporativo.
+
 ## Como rodar localmente
 
 1. Crie um ambiente virtual (recomendado):

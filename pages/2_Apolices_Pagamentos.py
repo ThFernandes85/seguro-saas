@@ -19,6 +19,8 @@ from database.db import (
 )
 from pagamentos.mercado_pago import criar_assinatura, consultar_assinatura
 
+st.set_page_config(layout="wide")
+
 init_db()
 
 if not esta_logado():
