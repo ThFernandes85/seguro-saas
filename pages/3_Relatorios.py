@@ -19,6 +19,8 @@ STATUS_LABELS = {
     "cancelled": "Cancelada",
 }
 
+st.set_page_config(layout="wide")
+
 init_db()
 
 if not esta_logado():

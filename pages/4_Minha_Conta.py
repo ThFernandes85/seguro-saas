@@ -9,6 +9,8 @@ import streamlit as st
 from auth.login import esta_logado, alterar_senha
 from database.db import init_db
 
+st.set_page_config(layout="wide")
+
 init_db()
 
 if not esta_logado():
