@@ -11,12 +11,10 @@ import streamlit as st
 
 from config import (
     APP_NAME,
-    LOGO_PATH,
     COR_PRIMARIA,
     COR_DOURADO,
     COR_ACCENT,
     COR_FUNDO_CLARO,
-    COR_CREME,
     HERO_IMAGE_PATH,
     HERO_IMAGE_URL_PLACEHOLDER,
     CONTATO_WHATSAPP,
@@ -149,6 +147,31 @@ def _injetar_estilo():
             flex-wrap: wrap;
             font-size: 0.92rem;
             font-weight: 500;
+        }}
+        .ls-logo-selo {{
+            position: relative;
+            width: 40px;
+            height: 40px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }}
+        .ls-logo-selo svg {{
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            color: #9CA3AF;
+            filter: drop-shadow(0 1px 1px rgba(0,0,0,0.15));
+        }}
+        .ls-logo-selo .ls-coracao {{
+            position: relative;
+            font-size: 1.15rem;
+            animation: ls-pulse 2s ease-in-out infinite;
+        }}
+        @keyframes ls-pulse {{
+            0%, 100% {{ opacity: 1; transform: scale(1); }}
+            50% {{ opacity: 0.65; transform: scale(0.92); }}
         }}
         .ls-nav a {{
             color: #4B5563;
@@ -373,13 +396,23 @@ def _ancora(id_secao):
     st.markdown(f'<div id="{id_secao}"></div>', unsafe_allow_html=True)
 
 
+_LOGO_SELO_SVG = """
+<div class="ls-logo-selo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
+    </svg>
+    <span class="ls-coracao">❤️</span>
+</div>
+"""
+
+
 def _secao_nav():
     _ancora("inicio")
     col_logo, col_nav, col_entrar = st.columns([1.6, 5, 1.1], vertical_alignment="center")
     with col_logo:
         col_img, col_txt = st.columns([1, 3], vertical_alignment="center")
         with col_img:
-            st.image(LOGO_PATH, width=40)
+            st.markdown(_LOGO_SELO_SVG, unsafe_allow_html=True)
         with col_txt:
             st.markdown(f"**{APP_NAME}**")
     with col_nav:
