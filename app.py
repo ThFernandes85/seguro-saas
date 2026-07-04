@@ -18,6 +18,7 @@ from database.db import (
     obter_resumo_apolices,
 )
 from auth.login import esta_logado, tela_login, fazer_logout
+from landing import tela_landing
 from planos import PLANOS
 
 st.set_page_config(page_title=APP_NAME, page_icon=FAVICON_PATH, layout="wide")
@@ -28,7 +29,12 @@ init_db()
 criar_tenant_e_usuario_teste()
 
 if not esta_logado():
-    tela_login()
+    # Visitante: mostra a landing page institucional até que ele peça
+    # para entrar (botão "Entrar"); só então aparece o formulário de login.
+    if st.session_state.get("mostrar_login"):
+        tela_login()
+    else:
+        tela_landing()
     st.stop()  # impede que o restante da página seja renderizado
 
 # --- A partir daqui, o usuário já está autenticado ---

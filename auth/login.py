@@ -162,6 +162,9 @@ def tela_login():
 
     col_esq, col_centro, col_dir = st.columns([2, 3, 2])
     with col_centro:
+        if st.button("← Voltar ao site"):
+            st.session_state["mostrar_login"] = False
+            st.rerun()
         st.image(LOGO_PATH, width=120)
         st.markdown(f"<h2 style='text-align: center; margin-bottom: 0;'>{APP_NAME}</h2>", unsafe_allow_html=True)
         st.markdown(f"<p style='text-align: center; color: gray;'>{APP_TAGLINE}</p>", unsafe_allow_html=True)

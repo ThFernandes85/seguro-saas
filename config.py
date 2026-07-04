@@ -58,3 +58,15 @@ def obter_segredo(nome, padrao=None):
 # no README, seção "Pagamentos (Mercado Pago)". Use
 # `obter_segredo(MERCADOPAGO_ACCESS_TOKEN_KEY)` para ler o valor.
 MERCADOPAGO_ACCESS_TOKEN_KEY = "MERCADOPAGO_ACCESS_TOKEN"
+
+# Cor de destaque (dourado) usada na landing page, combinando com o azul-
+# marinho (primaryColor) do restante do sistema.
+COR_DOURADO = "#C9962C"
+
+# Contato comercial exibido na landing page (botão do WhatsApp e link de
+# e-mail). Como o cadastro de novas empresas ainda é manual (veja
+# scripts/criar_tenant.py), o principal call-to-action da landing é
+# "falar com a gente" em vez de um cadastro automático.
+# TODO: atualizar com o WhatsApp/e-mail comercial reais antes de publicar.
+CONTATO_WHATSAPP = "5511999999999"
+CONTATO_EMAIL = "contato@segurosaas.com.br"
