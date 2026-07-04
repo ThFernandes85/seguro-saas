@@ -59,6 +59,13 @@ def obter_segredo(nome, padrao=None):
 # `obter_segredo(MERCADOPAGO_ACCESS_TOKEN_KEY)` para ler o valor.
 MERCADOPAGO_ACCESS_TOKEN_KEY = "MERCADOPAGO_ACCESS_TOKEN"
 
+# Senha do painel de administração do SaaS (pages/6_Admin_Corretoras.py),
+# usado só por você (dono do sistema) para cadastrar novas corretoras
+# pelo navegador. Configure em .streamlit/secrets.toml:
+# ADMIN_PANEL_SENHA = "escolha-uma-senha-forte". Sem essa chave
+# configurada, a página fica bloqueada (falha fechada, por segurança).
+ADMIN_PANEL_SENHA_KEY = "ADMIN_PANEL_SENHA"
+
 # Paleta de cores da landing page institucional (navy + dourado).
 COR_PRIMARIA = "#0B2545"
 COR_DOURADO = "#EE9B00"

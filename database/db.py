@@ -172,6 +172,19 @@ def buscar_tenant_por_id(tenant_id):
     return tenant
 
 
+def listar_tenants():
+    """
+    Lista todas as empresas (tenants) cadastradas, da mais recente
+    para a mais antiga. Usado no painel de administração do SaaS.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM tenants ORDER BY id DESC")
+    tenants = cursor.fetchall()
+    conn.close()
+    return tenants
+
+
 def atualizar_plano_tenant(tenant_id, plano):
     """
     Atualiza o plano de assinatura de uma empresa.

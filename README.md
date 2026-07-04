@@ -53,16 +53,34 @@ O sistema atende várias empresas (corretoras) com o mesmo app, cada uma
 com seus próprios usuários. No login, além de usuário e senha, é
 preciso informar o "slug" da empresa (ex: `demo`).
 
-Para cadastrar uma nova empresa e seu usuário administrador:
-
-```
-venv\Scripts\python.exe scripts\criar_tenant.py
-```
-
 A empresa de demonstração criada automaticamente na primeira execução é:
 - Empresa: `demo`
 - Usuário: `admin`
 - Senha: `admin123`
+
+### Cadastrando novas corretoras
+
+Existem duas formas de cadastrar uma nova empresa e seu usuário
+administrador:
+
+1. **Painel de administração no site** (recomendado quando o app está
+   publicado, já que o Streamlit Community Cloud não dá acesso a
+   terminal): acesse a página "Admin Corretoras" no menu lateral e
+   entre com a senha configurada em `ADMIN_PANEL_SENHA` (veja
+   `.streamlit/secrets.toml.example`). Essa página não tem nenhuma
+   relação com o login das corretoras -- é de uso exclusivo do dono do
+   sistema.
+2. **Script no terminal** (só cadastra na base de dados local da sua
+   máquina, útil para testes):
+   ```
+   venv\Scripts\python.exe scripts\criar_tenant.py
+   ```
+
+**Importante:** enquanto o banco de dados for o SQLite local (veja
+seção "Deploy online" abaixo), qualquer corretora cadastrada por
+qualquer um dos dois métodos é perdida sempre que o app reinicia no
+Streamlit Community Cloud. Migre para um banco externo antes de
+cadastrar clientes reais.
 
 ## Pagamentos (Mercado Pago)
 
