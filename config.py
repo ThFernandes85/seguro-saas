@@ -59,9 +59,22 @@ def obter_segredo(nome, padrao=None):
 # `obter_segredo(MERCADOPAGO_ACCESS_TOKEN_KEY)` para ler o valor.
 MERCADOPAGO_ACCESS_TOKEN_KEY = "MERCADOPAGO_ACCESS_TOKEN"
 
-# Cor de destaque (dourado) usada na landing page, combinando com o azul-
-# marinho (primaryColor) do restante do sistema.
-COR_DOURADO = "#C9962C"
+# Paleta de cores da landing page institucional (navy + dourado).
+COR_PRIMARIA = "#0B2545"
+COR_DOURADO = "#EE9B00"
+COR_ACCENT = "#134074"
+COR_FUNDO_CLARO = "#EEF4F8"
+COR_CREME = "#FDFBF7"
+
+# Foto de fundo do hero da landing page. Se existir um arquivo local em
+# assets/hero.jpg, ele tem prioridade; caso contrário usamos a URL de
+# placeholder abaixo (imagem gerada por IA, sem pessoas reais).
+# TODO: trocar por uma foto própria salvando o arquivo em assets/hero.jpg.
+HERO_IMAGE_PATH = os.path.join(BASE_DIR, "assets", "hero.jpg")
+HERO_IMAGE_URL_PLACEHOLDER = (
+    "https://images.unsplash.com/photo-1516627145497-ae6968895b74"
+    "?auto=format&fit=crop&w=1200&q=80"
+)
 
 # Contato comercial exibido na landing page (botão do WhatsApp e link de
 # e-mail). Como o cadastro de novas empresas ainda é manual (veja
