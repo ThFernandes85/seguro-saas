@@ -98,6 +98,11 @@ Para habilitar cobranças de verdade:
    ```
 3. Reinicie o `streamlit run app.py`.
 
+Se estiver hospedado em um serviço que não usa `.streamlit/secrets.toml`
+(ex: Railway, Render), basta configurar `MERCADOPAGO_ACCESS_TOKEN` e
+`ADMIN_PANEL_SENHA` como variáveis de ambiente do serviço -- o sistema
+lê de lá automaticamente quando o arquivo de secrets não existe.
+
 Sem o token configurado, a tela funciona normalmente mas mostra um
 aviso e não cria cobranças de verdade. A lógica de integração
 (`pagamentos/mercado_pago.py`) tem testes automatizados que simulam

@@ -29,10 +29,12 @@ SECRETS_PATH = os.path.join(BASE_DIR, ".streamlit", "secrets.toml")
 
 def obter_segredo(nome, padrao=None):
     """
-    Lê uma configuração sensível (ex: chave de API) do arquivo
-    .streamlit/secrets.toml. Retorna `padrao` se o arquivo não
-    existir ou a chave não estiver definida -- assim scripts fora do
-    Streamlit e o app sem o token configurado não quebram.
+    Lê uma configuração sensível (ex: chave de API), primeiro em
+    .streamlit/secrets.toml (Streamlit Community Cloud escreve/expõe
+    esse arquivo automaticamente a partir da aba "Secrets") e, se não
+    encontrar, numa variável de ambiente comum (Railway, Render e a
+    maioria dos outros hosts expõem variáveis configuradas no painel
+    como variáveis de ambiente do processo, não como esse arquivo).
 
     Só chama st.secrets se o arquivo existir: o Streamlit mostra um
     banner de erro na tela (e não só uma exceção) quando st.secrets é
@@ -41,15 +43,17 @@ def obter_segredo(nome, padrao=None):
     É lida sob demanda (e não no import deste módulo) porque acessar
     st.secrets antes de st.set_page_config() quebra o Streamlit.
     """
-    if not os.path.exists(SECRETS_PATH):
-        return padrao
+    if os.path.exists(SECRETS_PATH):
+        try:
+            import streamlit as st
 
-    try:
-        import streamlit as st
+            valor = st.secrets.get(nome, None)
+            if valor is not None:
+                return valor
+        except Exception:
+            pass
 
-        return st.secrets.get(nome, padrao)
-    except Exception:
-        return padrao
+    return os.environ.get(nome, padrao)
 
 
 # Nome da chave do Access Token do Mercado Pago (modo sandbox/teste ou
